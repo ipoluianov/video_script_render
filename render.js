@@ -372,6 +372,33 @@
       const ctx = canvas.getContext('2d');
       const zip = new JSZip();
 
+      const now = new Date();
+      const pad2 = (n) => String(n).padStart(2, '0');
+      const folderName = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()) + '-' +
+        pad2(now.getHours()) + '-' + pad2(now.getMinutes()) + '-' + pad2(now.getSeconds());
+      const folder = zip.folder(folderName);
+
+      const batLines = [
+        '@echo off',
+        'chcp 65001 >nul',
+        'set FPS=25',
+        'set PATTERN=frame_%%05d.png',
+        'echo Creating video from PNG frames (%FPS% fps)...',
+        'where ffmpeg >nul 2>&1',
+        'if %errorlevel% neq 0 (echo Install ffmpeg and add to PATH: https://ffmpeg.org & pause & exit /b 1)',
+        'echo.',
+        'echo [1/3] MP4 (H.264)...',
+        'ffmpeg -y -framerate %FPS% -i %PATTERN% -c:v libx264 -pix_fmt yuv420p output.mp4',
+        'echo [2/3] WebM (VP9)...',
+        'ffmpeg -y -framerate %FPS% -i %PATTERN% -c:v libvpx-vp9 -pix_fmt yuv420p output.webm',
+        'echo [3/3] AVI (MPEG-4)...',
+        'ffmpeg -y -framerate %FPS% -i %PATTERN% -c:v mpeg4 -pix_fmt yuv420p output.avi',
+        'echo.',
+        'echo Done: output.mp4, output.webm, output.avi',
+        'pause'
+      ];
+      folder.file('make_video.bat', batLines.join('\r\n'));
+
       function doFrame(index) {
         if (index > maxFrame) {
           zip.generateAsync({ type: 'blob' }).then(blob => {
@@ -392,7 +419,7 @@
           if (!blob) {
             log('Ошибка: не удалось создать PNG для кадра ' + index);
           } else {
-            zip.file('frame_' + String(index).padStart(5, '0') + '.png', blob);
+            folder.file('frame_' + String(index).padStart(5, '0') + '.png', blob);
           }
           progressBar.style.width = ((index + 1) / total * 100) + '%';
           setTimeout(() => doFrame(index + 1), 0);
