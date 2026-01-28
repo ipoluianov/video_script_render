@@ -32,12 +32,50 @@
   function parseScript(text) {
     const settings = { width: 640, height: 480 };
     const keyframes = {}; // frameNum -> { id: { type, ...props } }
+    const characters = {}; // name -> [ { id, type, ...relativeProps } ]
     const lines = text.split(/\r?\n/);
     let currentFrame = null;
+    let currentCharacter = null;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
+
+      // Внутри блока character ... end: описания примитивов персонажа
+      if (currentCharacter) {
+        if (/^end\b/i.test(line)) {
+          currentCharacter = null;
+          continue;
+        }
+        const parts = line.split(',').map(s => s.trim());
+        if (parts.length < 2) continue;
+        const firstToken = parts[0].split(/\s+/);
+        const cmd = (firstToken[0] || '').toLowerCase();
+        const type = ['line', 'rect', 'fillrect', 'circle', 'fillcircle'].find(t => cmd === t);
+        if (!type) continue;
+        const id = firstToken[1] || parts[1];
+        const keys = PRIMITIVES[type];
+        const rest = parts.slice(1).map((s, idx) => {
+          const k = keys[idx];
+          if (k === 'color') return s;
+          if (k === 'w' || k === 'h') return parseFloat(s) || 0;
+          return parseFloat(s) || 0;
+        });
+        const props = { type, id };
+        keys.forEach((k, idx) => { props[k] = rest[idx] ?? 0; });
+        if (!characters[currentCharacter]) characters[currentCharacter] = [];
+        characters[currentCharacter].push(props);
+        continue;
+      }
+
+      // Начало описания персонажа
+      const charDefMatch = line.match(/^character\s+(\w+)\s*:/i);
+      if (charDefMatch) {
+        const name = charDefMatch[1];
+        if (!characters[name]) characters[name] = [];
+        currentCharacter = name;
+        continue;
+      }
 
       const frameMatch = line.match(/^frame\s+(\d+)\s*:/i);
       if (frameMatch) {
@@ -56,13 +94,27 @@
       }
 
       const parts = line.split(',').map(s => s.trim());
-      if (parts.length < 2) continue;
+      if (parts.length < 1) continue;
 
       const firstToken = parts[0].split(/\s+/);
       const cmd = (firstToken[0] || '').toLowerCase();
+
+      // Экземпляр персонажа: char <name> <id>, x, y
+      if (cmd === 'char') {
+        const charName = firstToken[1];
+        const id = firstToken[2] || parts[1];
+        const x = parseFloat(parts[1]) || 0;
+        const y = parseFloat(parts[2]) || 0;
+        const frame = currentFrame !== null ? currentFrame : 0;
+        if (!keyframes[frame]) keyframes[frame] = {};
+        keyframes[frame][id] = { type: 'char', character: charName, x, y };
+        continue;
+      }
+
       const type = ['line', 'rect', 'fillrect', 'circle', 'fillcircle'].find(t => cmd === t);
       if (!type) continue;
 
+      if (parts.length < 2) continue;
       const id = firstToken[1] || parts[1];
       const keys = PRIMITIVES[type];
       const rest = parts.slice(1).map((s, idx) => {
@@ -82,7 +134,7 @@
 
     const frameNumbers = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
     const maxFrame = frameNumbers.length ? Math.max(...frameNumbers) : 0;
-    return { settings, keyframes, frameNumbers, maxFrame };
+    return { settings, keyframes, frameNumbers, maxFrame, characters };
   }
 
   // --- Интерполяция ---
@@ -101,7 +153,7 @@
   }
 
   function getInterpolatedState(parsed, frame) {
-    const { keyframes, frameNumbers } = parsed;
+    const { keyframes, frameNumbers, characters = {} } = parsed;
     const allIds = new Set();
     frameNumbers.forEach(f => Object.keys(keyframes[f] || {}).forEach(id => allIds.add(id)));
     const state = [];
@@ -119,10 +171,25 @@
       const next = nextF != null ? keyframes[nextF][id] : null;
       if (!prev && !next) return;
       const use = prev || next;
+      // Примитив без второго ключевого кадра или совпадающие кадры
       if (prevF === nextF || !prev || !next) {
         state.push({ id, ...use });
         return;
       }
+
+      // Отдельная логика для персонажей (type === 'char'): интерполируем только позицию
+      if (prev.type === 'char') {
+        const tChar = (frame - prevF) / (nextF - prevF);
+        state.push({
+          id,
+          type: 'char',
+          character: prev.character,
+          x: lerp(prev.x || 0, next.x || 0, tChar),
+          y: lerp(prev.y || 0, next.y || 0, tChar)
+        });
+        return;
+      }
+
       const t = (frame - prevF) / (nextF - prevF);
       const type = prev.type;
       const keys = PRIMITIVES[type];
@@ -133,7 +200,30 @@
       });
       state.push(props);
     });
-    return state;
+
+    // Разворачиваем персонажей в реальные примитивы
+    const finalState = [];
+    state.forEach(item => {
+      if (item.type !== 'char') {
+        finalState.push(item);
+        return;
+      }
+      const tpl = characters[item.character];
+      if (!tpl || !tpl.length) return;
+      tpl.forEach(base => {
+        const keys = PRIMITIVES[base.type];
+        const inst = { type: base.type, id: item.id + '_' + base.id };
+        keys.forEach(k => {
+          let v = base[k];
+          if (k === 'x' || k === 'x1' || k === 'x2') v = (v || 0) + (item.x || 0);
+          else if (k === 'y' || k === 'y1' || k === 'y2') v = (v || 0) + (item.y || 0);
+          inst[k] = v;
+        });
+        finalState.push(inst);
+      });
+    });
+
+    return finalState;
   }
 
   // --- Рендер на canvas ---

@@ -1,5 +1,11 @@
 settings 1280 720
 
+# Описание персонажа робота (координаты относительно центра робота)
+character robot:
+fillrect body, -30, -110, 60, 80, #00aaff
+circle head, 0, -130, 20, #eeeeee, 2
+end
+
 # Помидоры (ряд внизу экрана)
 frame 0:
 fillrect ground, 0, 650, 1280, 70, #553322
@@ -9,57 +15,46 @@ fillcircle t3, 600, 600, 30, #cc2222
 fillcircle t4, 800, 600, 30, #cc2222
 fillcircle t5, 1000, 600, 30, #cc2222
 
-# Робот: тело (fillrect rb) и голова (circle rh)
-# На первом помидоре
-fillrect rb, 170, 490, 60, 80, #00aaff
-circle rh, 200, 470, 20, #eeeeee, 2
+# Робот r, прыгающий по верхушкам помидоров
+frame 0:
+char robot r, 200, 600
 
 # Переход к помидору 2 (в прыжке над ними)
 frame 25:
-fillrect rb, 270, 440, 60, 80, #00aaff
-circle rh, 300, 420, 20, #eeeeee, 2
+char robot r, 300, 550
 
 # На помидоре 2
 frame 50:
-fillrect rb, 370, 490, 60, 80, #00aaff
-circle rh, 400, 470, 20, #eeeeee, 2
+char robot r, 400, 600
 
 # Между 2 и 3 (прыжок)
 frame 75:
-fillrect rb, 470, 440, 60, 80, #00aaff
-circle rh, 500, 420, 20, #eeeeee, 2
+char robot r, 500, 550
 
 # На помидоре 3
 frame 100:
-fillrect rb, 570, 490, 60, 80, #00aaff
-circle rh, 600, 470, 20, #eeeeee, 2
+char robot r, 600, 600
 
 # Между 3 и 4 (прыжок)
 frame 125:
-fillrect rb, 670, 440, 60, 80, #00aaff
-circle rh, 700, 420, 20, #eeeeee, 2
+char robot r, 700, 550
 
 # На помидоре 4
 frame 150:
-fillrect rb, 770, 490, 60, 80, #00aaff
-circle rh, 800, 470, 20, #eeeeee, 2
+char robot r, 800, 600
 
 # Между 4 и 5 (прыжок)
 frame 175:
-fillrect rb, 870, 440, 60, 80, #00aaff
-circle rh, 900, 420, 20, #eeeeee, 2
+char robot r, 900, 550
 
 # На помидоре 5
 frame 200:
-fillrect rb, 970, 490, 60, 80, #00aaff
-circle rh, 1000, 470, 20, #eeeeee, 2
+char robot r, 1000, 600
 
 # Прыжок вверх над последним помидором
 frame 225:
-fillrect rb, 970, 420, 60, 80, #00aaff
-circle rh, 1000, 400, 20, #eeeeee, 2
+char robot r, 1000, 530
 
 # Возврат на помидор 5 (финальный кадр, 10 секунд при 25 fps)
 frame 250:
-fillrect rb, 970, 490, 60, 80, #00aaff
-circle rh, 1000, 470, 20, #eeeeee, 2
+char robot r, 1000, 600
