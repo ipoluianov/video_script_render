@@ -134,15 +134,17 @@
       const firstToken = parts[0].split(/\s+/);
       const cmd = (firstToken[0] || '').toLowerCase();
 
-      // Экземпляр персонажа: char <name> <id>, x, y
+      // Экземпляр персонажа: char <name> <id>, x, y [, z, N]
       if (cmd === 'char') {
         const charName = firstToken[1];
         const id = firstToken[2] || parts[1];
         const x = parseFloat(parts[1]) || 0;
         const y = parseFloat(parts[2]) || 0;
+        let z = undefined;
+        if (parts.length >= 5 && parts[3].toLowerCase() === 'z') z = parseFloat(parts[4]);
         const frame = currentFrame !== null ? currentFrame : 0;
         if (!keyframes[frame]) keyframes[frame] = {};
-        keyframes[frame][id] = { type: 'char', character: charName, x, y };
+        keyframes[frame][id] = { type: 'char', character: charName, x, y, z };
         continue;
       }
 
@@ -151,10 +153,18 @@
         const x = parseFloat(parts[2]) || 0, y = parseFloat(parts[3]) || 0;
         const color = (parts[4] || '#fff').trim();
         const size = parseFloat(parts[5]) || 16;
-        const content = parts.slice(6).join(' ').trim();
+        let contentParts = parts.slice(6);
+        let z = undefined;
+        if (contentParts.length >= 2 && contentParts[contentParts.length - 2].toLowerCase() === 'z') {
+          z = parseFloat(contentParts[contentParts.length - 1]);
+          contentParts = contentParts.slice(0, -2);
+        }
+        const content = contentParts.join(' ').trim();
         const frame = currentFrame !== null ? currentFrame : 0;
         if (!keyframes[frame]) keyframes[frame] = {};
-        keyframes[frame][id] = { type: 'text', id, x, y, color, size, content };
+        const textProps = { type: 'text', id, x, y, color, size, content };
+        if (z !== undefined) textProps.z = z;
+        keyframes[frame][id] = textProps;
         continue;
       }
       if ((cmd === 'polygon' || cmd === 'fillpolygon') && parts.length >= 5) {
@@ -162,11 +172,17 @@
         const n = Math.max(0, parseInt(parts[1], 10) || 0);
         const points = [];
         for (let i = 0; i < n; i++) points.push({ x: parseFloat(parts[2 + i * 2]) || 0, y: parseFloat(parts[3 + i * 2]) || 0 });
-        const color = (parts[2 + n * 2] || '#fff').trim();
-        const width = cmd === 'polygon' ? (parseFloat(parts[3 + n * 2]) || 1) : 1;
+        const colorIdx = 2 + n * 2;
+        const widthIdx = colorIdx + 1;
+        let z = undefined;
+        if (parts.length >= widthIdx + 2 && (parts[widthIdx + 1] || '').toLowerCase() === 'z') z = parseFloat(parts[widthIdx + 2]);
+        const color = (parts[colorIdx] || '#fff').trim();
+        const width = cmd === 'polygon' ? (parseFloat(parts[widthIdx]) || 1) : 1;
         const frame = currentFrame !== null ? currentFrame : 0;
         if (!keyframes[frame]) keyframes[frame] = {};
-        keyframes[frame][id] = { type: cmd, id, points, color, width };
+        const polyProps = { type: cmd, id, points, color, width };
+        if (z !== undefined) polyProps.z = z;
+        keyframes[frame][id] = polyProps;
         continue;
       }
 
@@ -176,7 +192,8 @@
       if (parts.length < 2) continue;
       const id = firstToken[1] || parts[1];
       const keys = PRIMITIVES[type];
-      const rest = parts.slice(1).map((s, idx) => {
+      const numKeys = keys.length;
+      const rest = parts.slice(1, 1 + numKeys).map((s, idx) => {
         const k = keys[idx];
         if (k === 'color') return s;
         if (k === 'w' || k === 'h' || k === 'radius' || k === 'rx' || k === 'ry') return parseFloat(s) || 0;
@@ -185,6 +202,9 @@
 
       const props = { type };
       keys.forEach((k, idx) => { props[k] = rest[idx] ?? 0; });
+      if (parts.length >= 1 + numKeys + 2 && (parts[1 + numKeys] || '').toLowerCase() === 'z') {
+        props.z = parseFloat(parts[1 + numKeys + 1]);
+      }
 
       const frame = currentFrame !== null ? currentFrame : 0;
       if (!keyframes[frame]) keyframes[frame] = {};
@@ -236,30 +256,34 @@
         return;
       }
 
-      // Отдельная логика для персонажей (type === 'char'): интерполируем только позицию
+      // Отдельная логика для персонажей (type === 'char'): интерполируем позицию и z
       if (prev.type === 'char') {
         const tChar = (frame - prevF) / (nextF - prevF);
-        state.push({
+        const charItem = {
           id,
           type: 'char',
           character: prev.character,
           x: lerp(prev.x || 0, next.x || 0, tChar),
           y: lerp(prev.y || 0, next.y || 0, tChar)
-        });
+        };
+        if (prev.z != null || next.z != null) charItem.z = lerp(prev.z ?? next.z ?? 0, next.z ?? prev.z ?? 0, tChar);
+        state.push(charItem);
         return;
       }
 
       const t = (frame - prevF) / (nextF - prevF);
       const type = prev.type;
       if (type === 'text') {
-        state.push({
+        const textItem = {
           id, type: 'text',
           x: lerp(prev.x || 0, next.x || 0, t),
           y: lerp(prev.y || 0, next.y || 0, t),
           color: lerpColor(prev.color || '#000', next.color || '#000', t),
           size: lerp(Number(prev.size) || 16, Number(next.size) || 16, t),
           content: prev.content || next.content || ''
-        });
+        };
+        if (prev.z != null || next.z != null) textItem.z = lerp(prev.z ?? next.z ?? 0, next.z ?? prev.z ?? 0, t);
+        state.push(textItem);
         return;
       }
       if (type === 'polygon' || type === 'fillpolygon') {
@@ -272,7 +296,9 @@
             y: lerp(pp[i]?.y ?? np[i]?.y ?? 0, np[i]?.y ?? pp[i]?.y ?? 0, t)
           });
         }
-        state.push({ id, type, points, color: lerpColor(prev.color || '#000', next.color || '#000', t), width: lerp(Number(prev.width) || 1, Number(next.width) || 1, t) });
+        const polyItem = { id, type, points, color: lerpColor(prev.color || '#000', next.color || '#000', t), width: lerp(Number(prev.width) || 1, Number(next.width) || 1, t) };
+        if (prev.z != null || next.z != null) polyItem.z = lerp(prev.z ?? next.z ?? 0, next.z ?? prev.z ?? 0, t);
+        state.push(polyItem);
         return;
       }
       const keys = PRIMITIVES[type];
@@ -281,6 +307,7 @@
         if (k === 'color') props[k] = lerpColor(prev[k] || '#000', next[k] || '#000', t);
         else props[k] = lerp(Number(prev[k]) || 0, Number(next[k]) || 0, t);
       });
+      if (prev.z != null || next.z != null) props.z = lerp(prev.z ?? next.z ?? 0, next.z ?? prev.z ?? 0, t);
       state.push(props);
     });
 
@@ -291,28 +318,33 @@
         finalState.push(item);
         return;
       }
+      const charZ = item.z ?? 0;
+      const charId = item.id;
       const tpl = characters[item.character];
       if (!tpl || !tpl.length) return;
-      tpl.forEach(base => {
+      tpl.forEach((base, charOrder) => {
         if (base.type === 'text') {
           finalState.push({
             type: 'text',
-            id: item.id + '_' + base.id,
+            id: charId + '_' + base.id,
             x: (base.x || 0) + (item.x || 0),
             y: (base.y || 0) + (item.y || 0),
             color: base.color,
             size: base.size,
-            content: base.content || ''
+            content: base.content || '',
+            z: charZ,
+            charId,
+            charOrder
           });
           return;
         }
         if (base.type === 'polygon' || base.type === 'fillpolygon') {
           const points = (base.points || []).map(p => ({ x: (p.x || 0) + (item.x || 0), y: (p.y || 0) + (item.y || 0) }));
-          finalState.push({ type: base.type, id: item.id + '_' + base.id, points, color: base.color, width: base.width });
+          finalState.push({ type: base.type, id: charId + '_' + base.id, points, color: base.color, width: base.width, z: charZ, charId, charOrder });
           return;
         }
         const keys = PRIMITIVES[base.type];
-        const inst = { type: base.type, id: item.id + '_' + base.id };
+        const inst = { type: base.type, id: charId + '_' + base.id, z: charZ, charId, charOrder };
         keys.forEach(k => {
           let v = base[k];
           if (k === 'x' || k === 'x1' || k === 'x2') v = (v || 0) + (item.x || 0);
@@ -361,8 +393,11 @@
     ctx.fillRect(0, 0, width, height);
     const ordered = (state || []).slice();
     ordered.sort((a, b) => {
-      const z = (id) => (id === 'rb' || id === 'rh' ? 0 : id === 'ground' ? 1 : 2);
-      return z(a.id) - z(b.id);
+      const za = a.z ?? 0;
+      const zb = b.z ?? 0;
+      if (za !== zb) return za - zb;
+      if (a.charId && b.charId && a.charId === b.charId) return (a.charOrder ?? 0) - (b.charOrder ?? 0);
+      return String(a.id).localeCompare(String(b.id));
     });
     ordered.forEach(item => {
       const c = item.color || '#ffffff';

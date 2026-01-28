@@ -21,8 +21,10 @@ fillcircle hand_r, 52, -52, 8, #eeeeee
 # Голова
 fillcircle head, 0, -128, 20, #eeeeee
 circle head_outline, 0, -128, 20, #aaaaaa, 1
-fillcircle eye1, -7, -132, 5, #cc0000
-fillcircle eye2, 7, -132, 5, #cc0000
+fillcircle eye1, -7, -132, 7, #1a1a1a
+fillcircle eye2, 7, -132, 7, #1a1a1a
+fillcircle eye1_hi, -5, -134, 2, #ffffff
+fillcircle eye2_hi, 9, -134, 2, #ffffff
 fillcircle nose, 0, -124, 3, #cc0000
 line mouth, -6, -118, 6, -118, #00aa00, 2
 # Антенна (как у андроида)
@@ -30,68 +32,126 @@ line antenna, 0, -148, 0, -158, #333333, 2
 fillcircle antenna_cap, 0, -162, 5, #00aaff
 end
 
-# Помидоры (ряд внизу экрана)
+# Фон: порядок отрисовки задаётся параметром z (меньше — дальше, больше — ближе)
 frame 0:
-fillrect ground, 0, 650, 1280, 70, #553322
-fillcircle t1, 200, 600, 30, #cc2222
-fillcircle t2, 400, 600, 30, #cc2222
-fillcircle t3, 600, 600, 30, #cc2222
-fillcircle t4, 800, 600, 30, #cc2222
-fillcircle t5, 1000, 600, 30, #cc2222
+fillrect sky, 0, 0, 1280, 720, #87ceeb, z, -3
+fillcircle sun, 1100, 120, 70, #ffec80, z, -2
+fillcircle sun_core, 1100, 120, 55, #ffdd00, z, -2
+fillrect grass, 0, 480, 1280, 170, #3cb371, z, -1
+fillroundrect tree_trunk, 180, 380, 45, 100, 8, #8b4513, z, 0
+fillcircle tree_foliage1, 202, 320, 75, #228b22, z, 0
+fillcircle tree_foliage2, 165, 350, 55, #2e8b57, z, 0
+fillcircle tree_foliage3, 240, 340, 60, #228b22, z, 0
 
-# Робот r — ноги на верхней границе помидора (центр помидора 600, радиус 30 → верх 570)
+# Земля и помидоры (ряд внизу экрана)
 frame 0:
-char robot r, 200, 570
+fillrect ground, 0, 650, 1280, 70, #553322, z, 1
+fillcircle t1, 200, 600, 30, #cc2222, z, 2
+fillcircle t2, 400, 600, 30, #cc2222, z, 2
+fillcircle t3, 600, 600, 30, #cc2222, z, 2
+fillcircle t4, 800, 600, 30, #cc2222, z, 2
+fillcircle t5, 1000, 600, 30, #cc2222, z, 2
 
-# t1 исчезает после приземления (робот на t1 в кадре 0)
+# Птица: летит справа налево, крылья машут
+frame 0:
+fillcircle bird_body, 1310, 220, 7, #333333, z, 2
+filltriangle bird_beak, 1296, 220, 1302, 217, 1302, 223, #e6a020, z, 2
+filltriangle bird_wl, 1302, 216, 1292, 210, 1302, 224, #555555, z, 2
+filltriangle bird_wr, 1318, 216, 1328, 210, 1318, 224, #555555, z, 2
+
+# Робот r — ноги на верхней границе помидора
+frame 0:
+char robot r, 200, 570, z, 2
+
+# t1 исчезает после приземления. Птица — крылья вниз.
 frame 25:
-char robot r, 300, 550
-fillcircle t1, 200, 600, 0, #cc2222
+fillcircle bird_body, 1190, 220, 7, #333333, z, 2
+filltriangle bird_beak, 1176, 220, 1182, 217, 1182, 223, #e6a020, z, 2
+filltriangle bird_wl, 1182, 224, 1172, 230, 1182, 216, #555555, z, 2
+filltriangle bird_wr, 1198, 224, 1208, 230, 1198, 216, #555555, z, 2
+char robot r, 300, 550, z, 2
+fillcircle t1, 200, 600, 0, #cc2222, z, 2
 
-# На помидоре 2 — t2 ещё полный при приземлении, потом исчезает
+# На помидоре 2. Птица — крылья вверх.
 frame 50:
-char robot r, 400, 570
-fillcircle t2, 400, 600, 30, #cc2222
+fillcircle bird_body, 1070, 220, 7, #333333, z, 2
+filltriangle bird_beak, 1056, 220, 1062, 217, 1062, 223, #e6a020, z, 2
+filltriangle bird_wl, 1062, 216, 1052, 210, 1062, 224, #555555, z, 2
+filltriangle bird_wr, 1078, 216, 1088, 210, 1078, 224, #555555, z, 2
+char robot r, 400, 570, z, 2
+fillcircle t2, 400, 600, 30, #cc2222, z, 2
 frame 65:
-fillcircle t2, 400, 600, 0, #cc2222
+fillcircle t2, 400, 600, 0, #cc2222, z, 2
 
-# Между 2 и 3 (прыжок)
+# Между 2 и 3 (прыжок). Птица — крылья вниз.
 frame 75:
-char robot r, 500, 550
+fillcircle bird_body, 950, 220, 7, #333333, z, 2
+filltriangle bird_beak, 936, 220, 942, 217, 942, 223, #e6a020, z, 2
+filltriangle bird_wl, 942, 224, 932, 230, 942, 216, #555555, z, 2
+filltriangle bird_wr, 958, 224, 968, 230, 958, 216, #555555, z, 2
+char robot r, 500, 550, z, 2
 
-# На помидоре 3 — t3 полный при приземлении, потом исчезает
+# На помидоре 3. Птица — крылья вверх.
 frame 100:
-char robot r, 600, 570
-fillcircle t3, 600, 600, 30, #cc2222
+fillcircle bird_body, 830, 220, 7, #333333, z, 2
+filltriangle bird_beak, 816, 220, 822, 217, 822, 223, #e6a020, z, 2
+filltriangle bird_wl, 822, 216, 812, 210, 822, 224, #555555, z, 2
+filltriangle bird_wr, 838, 216, 848, 210, 838, 224, #555555, z, 2
+char robot r, 600, 570, z, 2
+fillcircle t3, 600, 600, 30, #cc2222, z, 2
 frame 115:
-fillcircle t3, 600, 600, 0, #cc2222
+fillcircle t3, 600, 600, 0, #cc2222, z, 2
 
-# Между 3 и 4 (прыжок)
+# Между 3 и 4 (прыжок). Птица — крылья вниз.
 frame 125:
-char robot r, 700, 550
+fillcircle bird_body, 710, 220, 7, #333333, z, 2
+filltriangle bird_beak, 696, 220, 702, 217, 702, 223, #e6a020, z, 2
+filltriangle bird_wl, 702, 224, 692, 230, 702, 216, #555555, z, 2
+filltriangle bird_wr, 718, 224, 728, 230, 718, 216, #555555, z, 2
+char robot r, 700, 550, z, 2
 
-# На помидоре 4 — t4 полный при приземлении, потом исчезает
+# На помидоре 4. Птица — крылья вверх.
 frame 150:
-char robot r, 800, 570
-fillcircle t4, 800, 600, 30, #cc2222
+fillcircle bird_body, 590, 220, 7, #333333, z, 2
+filltriangle bird_beak, 576, 220, 582, 217, 582, 223, #e6a020, z, 2
+filltriangle bird_wl, 582, 216, 572, 210, 582, 224, #555555, z, 2
+filltriangle bird_wr, 598, 216, 608, 210, 598, 224, #555555, z, 2
+char robot r, 800, 570, z, 2
+fillcircle t4, 800, 600, 30, #cc2222, z, 2
 frame 165:
-fillcircle t4, 800, 600, 0, #cc2222
+fillcircle t4, 800, 600, 0, #cc2222, z, 2
 
-# Между 4 и 5 (прыжок)
+# Между 4 и 5 (прыжок). Птица — крылья вниз.
 frame 175:
-char robot r, 900, 550
+fillcircle bird_body, 470, 220, 7, #333333, z, 2
+filltriangle bird_beak, 456, 220, 462, 217, 462, 223, #e6a020, z, 2
+filltriangle bird_wl, 462, 224, 452, 230, 462, 216, #555555, z, 2
+filltriangle bird_wr, 478, 224, 488, 230, 478, 216, #555555, z, 2
+char robot r, 900, 550, z, 2
 
-# На помидоре 5 — t5 полный при приземлении, потом исчезает
+# На помидоре 5. Птица — крылья вверх.
 frame 200:
-char robot r, 1000, 570
-fillcircle t5, 1000, 600, 30, #cc2222
+fillcircle bird_body, 350, 220, 7, #333333, z, 2
+filltriangle bird_beak, 336, 220, 342, 217, 342, 223, #e6a020, z, 2
+filltriangle bird_wl, 342, 216, 332, 210, 342, 224, #555555, z, 2
+filltriangle bird_wr, 358, 216, 368, 210, 358, 224, #555555, z, 2
+char robot r, 1000, 570, z, 2
+fillcircle t5, 1000, 600, 30, #cc2222, z, 2
 frame 215:
-fillcircle t5, 1000, 600, 0, #cc2222
+fillcircle t5, 1000, 600, 0, #cc2222, z, 2
 
-# Прыжок вверх над последним помидором
+# Прыжок вверх над последним помидором. Птица — крылья вниз.
 frame 225:
-char robot r, 1000, 530
+fillcircle bird_body, 230, 220, 7, #333333, z, 2
+filltriangle bird_beak, 216, 220, 222, 217, 222, 223, #e6a020, z, 2
+filltriangle bird_wl, 222, 224, 212, 230, 222, 216, #555555, z, 2
+filltriangle bird_wr, 238, 224, 248, 230, 238, 216, #555555, z, 2
+char robot r, 1000, 530, z, 2
 
-# Возврат на помидор 5 (финальный кадр, 10 секунд при 25 fps)
+# Возврат на помидор 5 (финальный кадр). Птица улетела влево, крылья вверх.
 frame 250:
-char robot r, 1000, 570
+fillcircle bird_body, 110, 220, 7, #333333, z, 2
+filltriangle bird_beak, 96, 220, 102, 217, 102, 223, #e6a020, z, 2
+filltriangle bird_wl, 102, 216, 92, 210, 102, 224, #555555, z, 2
+filltriangle bird_wr, 118, 216, 128, 210, 118, 224, #555555, z, 2
+char robot r, 1000, 570, z, 2
