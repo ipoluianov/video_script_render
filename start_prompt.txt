@@ -1,0 +1,18 @@
+This is a script language to create video from key frames.
+Animation is supported. Items - primitives.
+
+settings width, height
+line id, x1, y1, x2, y2, colorHex, width
+rect id, x, y, width, height, colorHex, width
+fillrect id, x, y, width, height, colorHex
+circle id, x, y, radius, colorHex, width
+
+Example (moving vertical line):
+
+settings 640 480
+
+frame 0:
+line l1, 10, 10, 10, 100, #0055AA, 3
+
+frame 25:
+line l1, 50, 10, 50, 100, #0055AA, 3

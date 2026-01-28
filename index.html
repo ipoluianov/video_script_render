@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Рендер сценария → PNG + ZIP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1rem;
+      background: #1a1a2e;
+      color: #eee;
+    }
+    h1 { color: #e94560; margin-top: 0; }
+    .panel {
+      background: #16213e;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    label { display: block; margin-bottom: 0.25rem; color: #a0a0a0; }
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      background: #0f0f1a;
+      color: #c0c0c0;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 8px;
+      resize: vertical;
+    }
+    .row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 0.75rem; }
+    button {
+      background: #e94560;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #ff6b6b; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    #preview {
+      background: #000;
+      border-radius: 4px;
+      display: block;
+      max-width: 100%;
+      margin-top: 0.5rem;
+    }
+    #log {
+      font-family: monospace;
+      font-size: 12px;
+      color: #8f8;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 0.5rem;
+    }
+    .progress { margin-top: 0.5rem; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
+    .progress-bar { height: 100%; background: #e94560; width: 0%; transition: width 0.2s; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>Рендер сценария</h1>
+    <p>Скрипт: <code>settings</code>, примитивы <code>line</code>, <code>rect</code>, <code>fillrect</code>, <code>circle</code>, <code>fillcircle</code>. Ключевые кадры: <code>frame N:</code> — свойства интерполируются между кадрами.</p>
+  </div>
+  <div class="panel">
+    <label for="script">Сценарий</label>
+    <textarea id="script" spellcheck="false">settings 640 480
+
+frame 0:
+line l1, 10, 10, 10, 100, #0055AA, 3
+
+frame 25:
+line l1, 50, 10, 50, 100, #0055AA, 3</textarea>
+    <div class="row">
+      <button id="btnPreview">Превью кадра</button>
+      <button id="btnPlay">Воспроизвести 25 fps</button>
+      <button id="btnStop">Стоп</button>
+      <button id="btnRender">Рендер → ZIP</button>
+      <input type="number" id="frameNum" value="0" min="0" style="width:70px;padding:6px;background:#0f0f1a;border:1px solid #333;color:#c0c0c0;border-radius:4px;">
+      <span>кадр для превью</span>
+    </div>
+    <div class="progress" id="progressWrap" style="display:none;">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div id="log"></div>
+    <canvas id="preview"></canvas>
+  </div>
+
+  <script src="render.js"></script>
+</body>
+</html>
