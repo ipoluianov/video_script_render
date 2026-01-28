@@ -1,13 +1,33 @@
 settings 1280 720
 
-# Описание персонажа робота (координаты относительно центра робота)
+# Робот-андроид: голова, торс, руки, ноги (координаты относительно центра, ноги внизу)
 character robot:
-fillrect body, -30, -110, 60, 80, #00aaff
-circle head, 0, -130, 20, #eeeeee, 2
-fillcircle eye1, -7, -135, 4, #cc0000
-fillcircle eye2, 7, -135, 4, #cc0000
-fillcircle nose, 0, -125, 3, #cc0000
+# Ноги
+fillroundrect thigh_l, -22, -70, 12, 38, 6, #00aaff
+fillroundrect thigh_r, 10, -70, 12, 38, 6, #00aaff
+fillroundrect shin_l, -22, -34, 12, 36, 6, #00aaff
+fillroundrect shin_r, 10, -34, 12, 36, 6, #00aaff
+fillroundrect foot_l, -26, -10, 18, 10, 4, #0088cc
+fillroundrect foot_r, 8, -10, 18, 10, 4, #0088cc
+# Торс
+fillroundrect body, -32, -108, 64, 40, 10, #00aaff
+# Руки (плечо + предплечье + кисть)
+fillroundrect arm_upper_l, -46, -98, 14, 32, 7, #00aaff
+fillroundrect arm_upper_r, 32, -98, 14, 32, 7, #00aaff
+fillroundrect arm_lower_l, -48, -68, 12, 28, 6, #00aaff
+fillroundrect arm_lower_r, 46, -68, 12, 28, 6, #00aaff
+fillcircle hand_l, -46, -52, 8, #eeeeee
+fillcircle hand_r, 52, -52, 8, #eeeeee
+# Голова
+fillcircle head, 0, -128, 20, #eeeeee
+circle head_outline, 0, -128, 20, #aaaaaa, 1
+fillcircle eye1, -7, -132, 5, #cc0000
+fillcircle eye2, 7, -132, 5, #cc0000
+fillcircle nose, 0, -124, 3, #cc0000
 line mouth, -6, -118, 6, -118, #00aa00, 2
+# Антенна (как у андроида)
+line antenna, 0, -148, 0, -158, #333333, 2
+fillcircle antenna_cap, 0, -162, 5, #00aaff
 end
 
 # Помидоры (ряд внизу экрана)
@@ -19,9 +39,9 @@ fillcircle t3, 600, 600, 30, #cc2222
 fillcircle t4, 800, 600, 30, #cc2222
 fillcircle t5, 1000, 600, 30, #cc2222
 
-# Робот r, прыгающий по верхушкам помидоров
+# Робот r — ноги на верхней границе помидора (центр помидора 600, радиус 30 → верх 570)
 frame 0:
-char robot r, 200, 600
+char robot r, 200, 570
 
 # t1 исчезает после приземления (робот на t1 в кадре 0)
 frame 25:
@@ -30,7 +50,7 @@ fillcircle t1, 200, 600, 0, #cc2222
 
 # На помидоре 2 — t2 ещё полный при приземлении, потом исчезает
 frame 50:
-char robot r, 400, 600
+char robot r, 400, 570
 fillcircle t2, 400, 600, 30, #cc2222
 frame 65:
 fillcircle t2, 400, 600, 0, #cc2222
@@ -41,7 +61,7 @@ char robot r, 500, 550
 
 # На помидоре 3 — t3 полный при приземлении, потом исчезает
 frame 100:
-char robot r, 600, 600
+char robot r, 600, 570
 fillcircle t3, 600, 600, 30, #cc2222
 frame 115:
 fillcircle t3, 600, 600, 0, #cc2222
@@ -52,7 +72,7 @@ char robot r, 700, 550
 
 # На помидоре 4 — t4 полный при приземлении, потом исчезает
 frame 150:
-char robot r, 800, 600
+char robot r, 800, 570
 fillcircle t4, 800, 600, 30, #cc2222
 frame 165:
 fillcircle t4, 800, 600, 0, #cc2222
@@ -63,7 +83,7 @@ char robot r, 900, 550
 
 # На помидоре 5 — t5 полный при приземлении, потом исчезает
 frame 200:
-char robot r, 1000, 600
+char robot r, 1000, 570
 fillcircle t5, 1000, 600, 30, #cc2222
 frame 215:
 fillcircle t5, 1000, 600, 0, #cc2222
@@ -74,4 +94,4 @@ char robot r, 1000, 530
 
 # Возврат на помидор 5 (финальный кадр, 10 секунд при 25 fps)
 frame 250:
-char robot r, 1000, 600
+char robot r, 1000, 570

@@ -25,9 +25,25 @@
     line: ['x1', 'y1', 'x2', 'y2', 'color', 'width'],
     rect: ['x', 'y', 'w', 'h', 'color', 'width'],
     fillrect: ['x', 'y', 'w', 'h', 'color'],
+    roundrect: ['x', 'y', 'w', 'h', 'radius', 'color', 'width'],
+    fillroundrect: ['x', 'y', 'w', 'h', 'radius', 'color'],
     circle: ['x', 'y', 'radius', 'color', 'width'],
-    fillcircle: ['x', 'y', 'radius', 'color']
+    fillcircle: ['x', 'y', 'radius', 'color'],
+    ellipse: ['x', 'y', 'rx', 'ry', 'color', 'width'],
+    fillellipse: ['x', 'y', 'rx', 'ry', 'color'],
+    arc: ['x', 'y', 'radius', 'startAngle', 'endAngle', 'color', 'width'],
+    fillarc: ['x', 'y', 'radius', 'startAngle', 'endAngle', 'color'],
+    ring: ['x', 'y', 'innerRadius', 'outerRadius', 'color', 'width'],
+    fillring: ['x', 'y', 'innerRadius', 'outerRadius', 'color'],
+    star: ['x', 'y', 'outerR', 'innerR', 'points', 'color', 'width'],
+    fillstar: ['x', 'y', 'outerR', 'innerR', 'points', 'color'],
+    triangle: ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'width'],
+    filltriangle: ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color'],
+    quad: ['x0', 'y0', 'cx', 'cy', 'x1', 'y1', 'color', 'width'],
+    cubic: ['x0', 'y0', 'c1x', 'c1y', 'c2x', 'c2y', 'x1', 'y1', 'color', 'width']
   };
+
+  const ALL_PRIMITIVE_TYPES = ['line', 'rect', 'fillrect', 'roundrect', 'fillroundrect', 'circle', 'fillcircle', 'ellipse', 'fillellipse', 'arc', 'fillarc', 'ring', 'fillring', 'star', 'fillstar', 'triangle', 'filltriangle', 'quad', 'cubic'];
 
   function parseScript(text) {
     const settings = { width: 640, height: 480 };
@@ -51,14 +67,33 @@
         if (parts.length < 2) continue;
         const firstToken = parts[0].split(/\s+/);
         const cmd = (firstToken[0] || '').toLowerCase();
-        const type = ['line', 'rect', 'fillrect', 'circle', 'fillcircle'].find(t => cmd === t);
+        const type = ALL_PRIMITIVE_TYPES.concat(['text', 'polygon', 'fillpolygon']).find(t => cmd === t);
         if (!type) continue;
         const id = firstToken[1] || parts[1];
+        if (type === 'text') {
+          const x = parseFloat(parts[2]) || 0, y = parseFloat(parts[3]) || 0;
+          const color = (parts[4] || '#fff').trim();
+          const size = parseFloat(parts[5]) || 16;
+          const content = parts.slice(6).join(' ').trim();
+          if (!characters[currentCharacter]) characters[currentCharacter] = [];
+          characters[currentCharacter].push({ type: 'text', id, x, y, color, size, content });
+          continue;
+        }
+        if (type === 'polygon' || type === 'fillpolygon') {
+          const n = Math.max(0, parseInt(parts[1], 10) || 0);
+          const points = [];
+          for (let i = 0; i < n; i++) points.push({ x: parseFloat(parts[2 + i * 2]) || 0, y: parseFloat(parts[3 + i * 2]) || 0 });
+          const color = (parts[2 + n * 2] || '#fff').trim();
+          const width = type === 'polygon' ? (parseFloat(parts[3 + n * 2]) || 1) : 1;
+          if (!characters[currentCharacter]) characters[currentCharacter] = [];
+          characters[currentCharacter].push({ type, id, points, color, width });
+          continue;
+        }
         const keys = PRIMITIVES[type];
         const rest = parts.slice(1).map((s, idx) => {
           const k = keys[idx];
           if (k === 'color') return s;
-          if (k === 'w' || k === 'h') return parseFloat(s) || 0;
+          if (k === 'w' || k === 'h' || k === 'radius' || k === 'rx' || k === 'ry') return parseFloat(s) || 0;
           return parseFloat(s) || 0;
         });
         const props = { type, id };
@@ -111,7 +146,31 @@
         continue;
       }
 
-      const type = ['line', 'rect', 'fillrect', 'circle', 'fillcircle'].find(t => cmd === t);
+      if (cmd === 'text' && parts.length >= 6) {
+        const id = firstToken[1] || parts[1];
+        const x = parseFloat(parts[2]) || 0, y = parseFloat(parts[3]) || 0;
+        const color = (parts[4] || '#fff').trim();
+        const size = parseFloat(parts[5]) || 16;
+        const content = parts.slice(6).join(' ').trim();
+        const frame = currentFrame !== null ? currentFrame : 0;
+        if (!keyframes[frame]) keyframes[frame] = {};
+        keyframes[frame][id] = { type: 'text', id, x, y, color, size, content };
+        continue;
+      }
+      if ((cmd === 'polygon' || cmd === 'fillpolygon') && parts.length >= 5) {
+        const id = firstToken[1] || parts[1];
+        const n = Math.max(0, parseInt(parts[1], 10) || 0);
+        const points = [];
+        for (let i = 0; i < n; i++) points.push({ x: parseFloat(parts[2 + i * 2]) || 0, y: parseFloat(parts[3 + i * 2]) || 0 });
+        const color = (parts[2 + n * 2] || '#fff').trim();
+        const width = cmd === 'polygon' ? (parseFloat(parts[3 + n * 2]) || 1) : 1;
+        const frame = currentFrame !== null ? currentFrame : 0;
+        if (!keyframes[frame]) keyframes[frame] = {};
+        keyframes[frame][id] = { type: cmd, id, points, color, width };
+        continue;
+      }
+
+      const type = ALL_PRIMITIVE_TYPES.find(t => cmd === t);
       if (!type) continue;
 
       if (parts.length < 2) continue;
@@ -120,7 +179,7 @@
       const rest = parts.slice(1).map((s, idx) => {
         const k = keys[idx];
         if (k === 'color') return s;
-        if (k === 'w' || k === 'h') return parseFloat(s) || 0;
+        if (k === 'w' || k === 'h' || k === 'radius' || k === 'rx' || k === 'ry') return parseFloat(s) || 0;
         return parseFloat(s) || 0;
       });
 
@@ -192,6 +251,30 @@
 
       const t = (frame - prevF) / (nextF - prevF);
       const type = prev.type;
+      if (type === 'text') {
+        state.push({
+          id, type: 'text',
+          x: lerp(prev.x || 0, next.x || 0, t),
+          y: lerp(prev.y || 0, next.y || 0, t),
+          color: lerpColor(prev.color || '#000', next.color || '#000', t),
+          size: lerp(Number(prev.size) || 16, Number(next.size) || 16, t),
+          content: prev.content || next.content || ''
+        });
+        return;
+      }
+      if (type === 'polygon' || type === 'fillpolygon') {
+        const pp = prev.points || [], np = next.points || [];
+        const n = Math.max(pp.length, np.length);
+        const points = [];
+        for (let i = 0; i < n; i++) {
+          points.push({
+            x: lerp(pp[i]?.x ?? np[i]?.x ?? 0, np[i]?.x ?? pp[i]?.x ?? 0, t),
+            y: lerp(pp[i]?.y ?? np[i]?.y ?? 0, np[i]?.y ?? pp[i]?.y ?? 0, t)
+          });
+        }
+        state.push({ id, type, points, color: lerpColor(prev.color || '#000', next.color || '#000', t), width: lerp(Number(prev.width) || 1, Number(next.width) || 1, t) });
+        return;
+      }
       const keys = PRIMITIVES[type];
       const props = { type, id };
       keys.forEach(k => {
@@ -211,6 +294,23 @@
       const tpl = characters[item.character];
       if (!tpl || !tpl.length) return;
       tpl.forEach(base => {
+        if (base.type === 'text') {
+          finalState.push({
+            type: 'text',
+            id: item.id + '_' + base.id,
+            x: (base.x || 0) + (item.x || 0),
+            y: (base.y || 0) + (item.y || 0),
+            color: base.color,
+            size: base.size,
+            content: base.content || ''
+          });
+          return;
+        }
+        if (base.type === 'polygon' || base.type === 'fillpolygon') {
+          const points = (base.points || []).map(p => ({ x: (p.x || 0) + (item.x || 0), y: (p.y || 0) + (item.y || 0) }));
+          finalState.push({ type: base.type, id: item.id + '_' + base.id, points, color: base.color, width: base.width });
+          return;
+        }
         const keys = PRIMITIVES[base.type];
         const inst = { type: base.type, id: item.id + '_' + base.id };
         keys.forEach(k => {
@@ -227,6 +327,35 @@
   }
 
   // --- Рендер на canvas ---
+  function drawRoundRectPath(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, w, h, r);
+      return;
+    }
+    r = Math.min(r, w / 2, h / 2);
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+  }
+
+  function drawEllipsePath(ctx, x, y, rx, ry) {
+    if (typeof ctx.ellipse === 'function') {
+      ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      return;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(rx, ry);
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.restore();
+  }
+
   function render(ctx, state, width, height) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
@@ -252,6 +381,19 @@
       } else if (item.type === 'fillrect') {
         ctx.fillStyle = c;
         ctx.fillRect(item.x, item.y, item.w, item.h);
+      } else if (item.type === 'roundrect') {
+        const r = Math.max(0, Number(item.radius) || 0);
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        drawRoundRectPath(ctx, item.x, item.y, item.w, item.h, r);
+        ctx.stroke();
+      } else if (item.type === 'fillroundrect') {
+        const r = Math.max(0, Number(item.radius) || 0);
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        drawRoundRectPath(ctx, item.x, item.y, item.w, item.h, r);
+        ctx.fill();
       } else if (item.type === 'circle') {
         ctx.strokeStyle = c;
         ctx.lineWidth = w;
@@ -263,8 +405,146 @@
         ctx.beginPath();
         ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
         ctx.fill();
+      } else if (item.type === 'ellipse') {
+        const rx = Math.max(0, Number(item.rx) || 0);
+        const ry = Math.max(0, Number(item.ry) || 0);
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        drawEllipsePath(ctx, item.x, item.y, rx, ry);
+        ctx.stroke();
+      } else if (item.type === 'fillellipse') {
+        const rx = Math.max(0, Number(item.rx) || 0);
+        const ry = Math.max(0, Number(item.ry) || 0);
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        drawEllipsePath(ctx, item.x, item.y, rx, ry);
+        ctx.fill();
+      } else if (item.type === 'arc') {
+        const r = Math.max(0, Number(item.radius) || 0);
+        const start = (Number(item.startAngle) || 0) * Math.PI / 180;
+        const end = (Number(item.endAngle) || 360) * Math.PI / 180;
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, r, start, end);
+        ctx.stroke();
+      } else if (item.type === 'fillarc') {
+        const r = Math.max(0, Number(item.radius) || 0);
+        const start = (Number(item.startAngle) || 0) * Math.PI / 180;
+        const end = (Number(item.endAngle) || 360) * Math.PI / 180;
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.moveTo(item.x, item.y);
+        ctx.arc(item.x, item.y, r, start, end);
+        ctx.closePath();
+        ctx.fill();
+      } else if (item.type === 'ring') {
+        const ir = Math.max(0, Number(item.innerRadius) || 0);
+        const or = Math.max(ir, Number(item.outerRadius) || 0);
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, ir, 0, Math.PI * 2);
+        ctx.arc(item.x, item.y, or, Math.PI * 2, 0, true);
+        ctx.closePath();
+        ctx.stroke();
+      } else if (item.type === 'fillring') {
+        const ir = Math.max(0, Number(item.innerRadius) || 0);
+        const or = Math.max(ir, Number(item.outerRadius) || 0);
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, or, 0, Math.PI * 2);
+        ctx.arc(item.x, item.y, ir, Math.PI * 2, 0, true);
+        ctx.fill('evenodd');
+      } else if (item.type === 'star') {
+        const pts = starPoints(item.x, item.y, Number(item.outerR) || 0, Number(item.innerR) || 0, Math.max(2, parseInt(item.points, 10) || 5));
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        pts.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
+        ctx.closePath();
+        ctx.stroke();
+      } else if (item.type === 'fillstar') {
+        const pts = starPoints(item.x, item.y, Number(item.outerR) || 0, Number(item.innerR) || 0, Math.max(2, parseInt(item.points, 10) || 5));
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        pts.forEach((p, i) => { if (i > 0) ctx.lineTo(p.x, p.y); });
+        ctx.closePath();
+        ctx.fill();
+      } else if (item.type === 'triangle') {
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(item.x1, item.y1);
+        ctx.lineTo(item.x2, item.y2);
+        ctx.lineTo(item.x3, item.y3);
+        ctx.closePath();
+        ctx.stroke();
+      } else if (item.type === 'filltriangle') {
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.moveTo(item.x1, item.y1);
+        ctx.lineTo(item.x2, item.y2);
+        ctx.lineTo(item.x3, item.y3);
+        ctx.closePath();
+        ctx.fill();
+      } else if (item.type === 'quad') {
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(item.x0, item.y0);
+        ctx.quadraticCurveTo(item.cx, item.cy, item.x1, item.y1);
+        ctx.stroke();
+      } else if (item.type === 'cubic') {
+        ctx.strokeStyle = c;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(item.x0, item.y0);
+        ctx.bezierCurveTo(item.c1x, item.c1y, item.c2x, item.c2y, item.x1, item.y1);
+        ctx.stroke();
+      } else if (item.type === 'text') {
+        const size = Math.max(1, Number(item.size) || 16);
+        ctx.font = size + 'px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = item.color || '#ffffff';
+        ctx.fillText(item.content || '', item.x, item.y);
+      } else if (item.type === 'polygon') {
+        const pts = item.points || [];
+        if (pts.length > 0) {
+          ctx.strokeStyle = c;
+          ctx.lineWidth = w;
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      } else if (item.type === 'fillpolygon') {
+        const pts = item.points || [];
+        if (pts.length > 0) {
+          ctx.fillStyle = c;
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.closePath();
+          ctx.fill();
+        }
       }
     });
+  }
+
+  function starPoints(cx, cy, outerR, innerR, n) {
+    const pts = [];
+    for (let i = 0; i < n * 2; i++) {
+      const a = (i * Math.PI / n) - Math.PI / 2;
+      const r = i % 2 === 0 ? outerR : innerR;
+      pts.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+    }
+    return pts;
   }
 
   // --- Воспроизведение как видео (25 fps) ---

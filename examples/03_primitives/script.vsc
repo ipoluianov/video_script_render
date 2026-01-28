@@ -12,11 +12,51 @@ rect r1, 300, 40, 150, 100, #00ff00, 4
 # Заполненный прямоугольник (fillrect)
 fillrect fr1, 500, 50, 180, 80, #0000ff
 
+# Прямоугольник со скруглёнными краями, обводка (roundrect: x, y, w, h, radius, color, width)
+roundrect rr1, 50, 350, 120, 80, 15, #00ff88, 3
+
+# Заполненный прямоугольник со скруглёнными краями (fillroundrect: x, y, w, h, radius, color)
+fillroundrect frr1, 220, 340, 140, 100, 20, #0088ff
+
 # Окружность с обводкой (circle)
 circle c1, 150, 250, 50, #ffaa00, 5
 
 # Заполненный круг (fillcircle)
 fillcircle fc1, 400, 260, 60, #cc22cc
+
+# Эллипс с обводкой (ellipse: x, y, rx, ry, color, width)
+ellipse e1, 150, 450, 80, 40, #ff8800, 3
+
+# Заполненный эллипс (fillellipse: x, y, rx, ry, color)
+fillellipse fe1, 400, 450, 60, 50, #aa44ff
+
+# Дуга и сектор (arc: x, y, radius, startAngle°, endAngle°, color, width | fillarc без width)
+arc a1, 80, 520, 35, 0, 180, #ff6600, 2
+fillarc fa1, 160, 520, 35, 45, 270, #0066cc
+
+# Кольцо (ring / fillring: x, y, innerRadius, outerRadius, color, width)
+ring ring1, 260, 520, 15, 40, #00aa44, 2
+fillring fring1, 340, 520, 20, 45, #8844aa
+
+# Звезда (star / fillstar: x, y, outerR, innerR, points, color, width)
+star s1, 430, 520, 40, 18, 5, #ccaa00, 2
+fillstar fs1, 520, 520, 35, 15, 6, #aa0066
+
+# Треугольник (triangle / filltriangle: x1,y1, x2,y2, x3,y3, color, width)
+triangle t1, 620, 480, 580, 560, 660, 560, #00cccc, 2
+filltriangle ft1, 720, 500, 680, 560, 760, 560, #cc6600
+
+# Кривые Безье (quad: x0,y0, cx,cy, x1,y1 | cubic: x0,y0, c1x,c1y, c2x,c2y, x1,y1)
+quad q1, 50, 200, 150, 100, 250, 200, #ff00aa, 3
+cubic c1, 300, 200, 350, 150, 450, 250, 500, 200, #00aaff, 2
+
+# Текст (text: id, x, y, color, size, слова через запятую)
+text txt1, 50, 570, #ffffff, 20, Primitives
+text txt2, 50, 595, #aaaaaa, 14, arc ring star triangle quad cubic polygon
+
+# Многоугольник (polygon / fillpolygon: id, n, x1,y1, x2,y2, ..., color, width)
+polygon poly1, 4, 550, 350, 650, 370, 630, 450, 530, 430, #ffff00, 2
+fillpolygon fpoly1, 5, 400, 350, 450, 380, 440, 450, 360, 420, 370, 350, #44ff44
 
 # Комбинация: заливка + рамка
 fillrect fr2, 580, 220, 120, 90, #444444
